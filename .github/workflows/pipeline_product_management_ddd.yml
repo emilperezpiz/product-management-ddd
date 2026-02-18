@@ -1,0 +1,89 @@
+name: Deployment pipeline (product management ddd)
+
+on:
+  push:
+    branches:
+      - main
+  pull_request: # Se ejecuta en cualquier PR hacia cualquier rama
+    types: [opened, synchronize]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    permissions: # necesario para "styfle/cancel-workflow-action@0.12.1"
+      contents: read # Permite leer el código del repositorio
+      actions: write # permiso necesario para detener los workflows
+    env:
+      MYSQL_USER: ${{ vars.PROD_MYSQL_USER }} # por el momento solo de prueba
+      MYSQL_PASSWORD: ${{ vars.PROD_MYSQL_PASSWORD }} # por el momento solo de prueba
+    steps:
+      - name: Cancel previous redundant workflow
+        uses: styfle/cancel-workflow-action@0.12.1
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Descarga todo el historial de commits
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          extensions: imagick, intl, pdo_mysql, curl, mongodb, amqp, redis, yaml
+      - name: Vars list
+        run: |
+            echo "Vars list:"
+            echo "mysql user: $MYSQL_USER"
+            echo "mysql password: $MYSQL_PASSWORD"
+      # - name: Secrets list
+      #   run: |
+      #       echo "Secrets list:"
+      #       echo ${{ secrets.MY_SECRET }}
+      #       echo ${{ secrets.MY_SECRET }}
+      - name: Copy .env
+        run: |
+          cp .env.example ./.env &&
+          ls -l .env
+      - name: Install dependencies
+        env:
+          COMPOSER_MEMORY_LIMIT: -1
+          DATABASE_URL: "sqlite:///:memory:"
+        run: |
+          composer self-update --2
+          composer install --no-interaction --prefer-dist --no-scripts
+      # - name: Run database migrations
+      #   env:
+      #     DATABASE_URL: "sqlite:///:memory:"
+      #   run: |
+      #     php artisan migrate --no-interaction
+      # - name: Run Seeders
+      #   env:
+      #     DATABASE_URL: "sqlite:///:memory:"
+      #   run: |
+      #     php artisan db:seed --no-interaction
+      - name: Check if PHP files were changed
+        id: check_php
+        run: |
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep '\.php$' || true)
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No PHP files changed."
+            echo "has_php_files=false" >> $GITHUB_ENV
+          else
+            echo "PHP files changed:"
+            echo "$CHANGED_FILES"
+            echo "has_php_files=true" >> $GITHUB_ENV
+          fi
+      - name: Run PSR code style check
+        if: env.has_php_files == 'true'
+        run: |
+          composer global require friendsofphp/php-cs-fixer
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD | grep '\.php$' || true)
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "Checking PSR-12 formatting for changed files..."
+            echo "$CHANGED_FILES"
+            ~/.composer/vendor/bin/php-cs-fixer fix --dry-run --diff --config=.php-cs-fixer.dist.php --allow-risky=yes $CHANGED_FILES
+          fi
+      - name: Deploy to server
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          echo "Deploy started"
+
+

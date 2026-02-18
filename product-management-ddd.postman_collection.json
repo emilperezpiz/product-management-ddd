@@ -1,0 +1,152 @@
+{
+  "info": {
+    "_postman_id": "1dc4bf26-a579-4987-a131-16afe757a7ab",
+    "name": "product-management-ddd",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "5413708",
+    "_collection_link": "https://go.postman.co/collection/5413708-1dc4bf26-a579-4987-a131-16afe757a7ab?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Product",
+      "item": [
+        {
+          "name": "list",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/product?page=1&limit=2",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "product"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "2"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "create",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"sku\": \"SKU1234\",\n    \"name\": \"Product Name\",\n    \"description\": \"Product Description\",\n    \"price\": 19.99,\n    \"category\": \"Electronics\",\n    \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/product",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "product"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/product/a11b6ebe-f1ac-4d49-949e-dbaa0d5164d7",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "product",
+                "a11b6ebe-f1ac-4d49-949e-dbaa0d5164d7"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remove",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/product/a11b4ea4-b66e-4126-8ae1-1a8954fb795b",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "product",
+                "a11b4ea4-b66e-4126-8ae1-1a8954fb795b"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ping",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{host}}/ping",
+          "host": [
+            "{{host}}"
+          ],
+          "path": [
+            "ping"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
