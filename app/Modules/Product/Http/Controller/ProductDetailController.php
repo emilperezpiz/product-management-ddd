@@ -16,15 +16,7 @@ final class ProductDetailController extends Controller
     }
     public function execute(string $uuid): JsonResponse
     {
-        try {
-            $data = $this->productDetailService->execute($uuid);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'data' => [],
-                'message' => $e->getMessage(),
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
+        $data = $this->productDetailService->execute($uuid);
         return response()->json([
             'message' => 'Product retrieved successfully',
             'data' => $data,

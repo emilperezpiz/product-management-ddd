@@ -18,16 +18,7 @@ final class ProductSearchController extends Controller
     public function execute(ProductListRequest $request): JsonResponse
     {
         $filter = $request->validatedDto();
-
-        try {
-            $data = $this->productSearchtService->execute($filter);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'data' => [],
-                'message' => $e->getMessage(),
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
+        $data = $this->productSearchtService->execute($filter);
         return response()->json([
             'message' => 'Products retrieved successfully',
             'data' => $data,

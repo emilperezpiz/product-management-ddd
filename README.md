@@ -27,6 +27,9 @@ Implementação de um módulo de **Gestão de Produtos** seguindo princípios re
 - rodar migrações ```php artisan migrate```
 - rodar seed ```php artisan db:seed```
 
+# Coleção Postman
+- product-management-ddd.postman_collection.json
+
 # Comandos Básicos – Elasticsearch
 Abaixo estão alguns comandos úteis para inspecionar e validar dados diretamente no Elasticsearch utilizando `curl`.
 > Certifique-se de que o Elasticsearch esteja rodando em `http://localhost:9200`.
@@ -62,5 +65,8 @@ curl -X GET "http://localhost:9200/products/_search?pretty"
 curl -X DELETE "http://localhost:9200/products" 
 ```
 
+## Pastas com o código
+
+- Modules/Product/...
 
 

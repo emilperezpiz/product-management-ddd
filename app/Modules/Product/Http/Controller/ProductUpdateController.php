@@ -20,14 +20,7 @@ final class ProductUpdateController extends Controller
         ProductUpdateRequest $request
     ): JsonResponse {
         $dto = $request->validatedDto();
-        try {
-            $data = $this->productUpdateService->execute($uuid, $dto);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'data' => [],
-                'message' => $e->getMessage(),
-            ], Response::HTTP_BAD_REQUEST);
-        }
+        $data = $this->productUpdateService->execute($uuid, $dto);
         return response()->json([
             'message' => 'Product updated successfully',
             'data' => $data,

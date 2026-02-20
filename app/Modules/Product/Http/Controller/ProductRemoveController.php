@@ -16,15 +16,7 @@ final class ProductRemoveController extends Controller
     }
     public function execute(string $uuid): JsonResponse
     {
-        try {
-            $this->productRemoveService->execute($uuid);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'data' => [],
-                'message' => $e->getMessage(),
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
+        $this->productRemoveService->execute($uuid);
         return response()->json([
             'message' => 'Product removed successfully',
         ], Response::HTTP_NO_CONTENT);

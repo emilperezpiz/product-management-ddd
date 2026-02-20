@@ -3,6 +3,10 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -41,10 +45,36 @@ class Handler extends ExceptionHandler
      *
      * @return void
      */
-    public function register()
+    public function register(): void
     {
-        $this->reportable(function (Throwable $e) {
-            //
+        $this->renderable(function (Throwable $e, $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                return $this->handleApiErrors($e);
+            }
         });
+    }
+
+    private function handleApiErrors(Throwable $e): JsonResponse
+    {
+        $status = $this->getStatusCode($e);
+        return response()->json([
+            'data' => [],
+            'message' => $e->getMessage(),
+            'details' => ($e instanceof ValidationException) ? $e->errors() : null,
+        ], $status);
+    }
+
+    private function getStatusCode(Throwable $e): int
+    {
+        if ($e instanceof ValidationException) {
+            return Response::HTTP_UNPROCESSABLE_ENTITY;
+        }
+        if ($e instanceof NotFoundHttpException) {
+            return Response::HTTP_NOT_FOUND;
+        }
+        if (method_exists($e, 'getStatusCode')) {
+            return $e->getStatusCode();
+        }
+        return Response::HTTP_INTERNAL_SERVER_ERROR;
     }
 }
