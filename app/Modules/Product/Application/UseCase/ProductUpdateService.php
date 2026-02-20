@@ -10,6 +10,7 @@ use App\Modules\Product\Domain\Entity\Product;
 use App\Modules\Product\Domain\IRepository\IProductRepository;
 use App\Modules\Product\Domain\ValueObject\ProductName;
 use App\Modules\Product\Domain\ValueObject\ProductPrice;
+use Illuminate\Support\Facades\Redis;
 
 class ProductUpdateService implements IProductUpdateService
 {
@@ -22,11 +23,11 @@ class ProductUpdateService implements IProductUpdateService
         ProductDTO $dto
     ): ProductDTO {
         $product = $this->productRepository->getByUuid($uuid);
-
         if (!$product) {
             throw new \InvalidArgumentException("Product with UUID {$uuid} not found.");
         }
-
+        $redisKey = "product:{$uuid}";
+        Redis::del($redisKey);
         $productModel = $this->productRepository->update(new Product(
             uuid: $uuid,
             sku: $dto->sku,
@@ -34,9 +35,9 @@ class ProductUpdateService implements IProductUpdateService
             description: $dto->description,
             price: new ProductPrice((float) $dto->price),
             category: $dto->category,
-            status: $dto->status
+            status: $dto->status,
+            imagePath: $dto->imagePath,
         ));
-
         return ProductDTO::from([
             'uuid' => $productModel->uuid(),
             'sku' => $productModel->sku(),
@@ -44,7 +45,8 @@ class ProductUpdateService implements IProductUpdateService
             'description' => $productModel->description(),
             'price' => $productModel->price()->value(),
             'category' => $productModel->category(),
-            'status' => $productModel->status()
+            'status' => $productModel->status(),
+            'imagePath' => $productModel->imagePath(),
         ]);
     }
 }

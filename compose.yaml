@@ -5,6 +5,7 @@ services:
             dockerfile: Dockerfile
             args:
                 WWWGROUP: '${WWWGROUP}'
+        container_name: product-management-ddd
         image: 'sail-8.0/app'
         extra_hosts:
             - 'host.docker.internal:host-gateway'
@@ -24,9 +25,6 @@ services:
         depends_on:
             - mysql
             - redis
-        #     - meilisearch
-        #     - mailpit
-        #     - selenium
     mysql:
         image: 'mysql/mysql-server:8.0'
         ports:
@@ -64,51 +62,24 @@ services:
         command: redis-server --loglevel warning --requirepass ${REDIS_PASSWORD}
         healthcheck:
             test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD} ping | grep PONG"]
-            # test:
-            #     - CMD
-            #     - redis-cli
-            #     - -a
-            #     - ${REDIS_PASSWORD}
-            #     - ping
             retries: 3
             timeout: 5s
-    # meilisearch:
-    #     image: 'getmeili/meilisearch:latest'
-    #     ports:
-    #         - '${FORWARD_MEILISEARCH_PORT:-7700}:7700'
-    #     environment:
-    #         MEILI_NO_ANALYTICS: '${MEILISEARCH_NO_ANALYTICS:-false}'
-    #     volumes:
-    #         - 'sail-meilisearch:/meili_data'
-    #     networks:
-    #         - sail
-    #     healthcheck:
-    #         test:
-    #             - CMD
-    #             - wget
-    #             - '--no-verbose'
-    #             - '--spider'
-    #             - 'http://127.0.0.1:7700/health'
-    #         retries: 3
-    #         timeout: 5s
-    # mailpit:
-    #     image: 'axllent/mailpit:latest'
-    #     ports:
-    #         - '${FORWARD_MAILPIT_PORT:-1025}:1025'
-    #         - '${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025'
-    #     networks:
-    #         - sail
-    # selenium:
-    #     image: selenium/standalone-chromium
-    #     extra_hosts:
-    #         - 'host.docker.internal:host-gateway'
-    #     volumes:
-    #         - '/dev/shm:/dev/shm'
-    #     networks:
-    #         - sail
+    elasticsearch:
+        image: 'docker.elastic.co/elasticsearch/elasticsearch:8.10.2'
+        ports:
+            - '${FORWARD_ELASTICSEARCH_PORT:-9200}:9200'
+        environment:
+            - 'discovery.type=single-node'
+            - 'xpack.security.enabled=false'
+            - 'ES_JAVA_OPTS=-Xms512m -Xmx512m' # RAM
+        volumes:
+            - './docker/volumes/elasticsearch:/usr/share/elasticsearch/data'
+        networks:
+            - sail
+        healthcheck:
+            test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
+            retries: 3
+            timeout: 5s
 networks:
     sail:
         driver: bridge
-# volumes:
-#     sail-meilisearch:
-#         driver: local

@@ -6,7 +6,7 @@ namespace App\Modules\Product\Http\Controller;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Product\Application\UseCase\Interface\IProductUpdateService;
-use App\Modules\Product\Http\Request\ProductCreateRequest;
+use App\Modules\Product\Http\Request\ProductUpdateRequest;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -17,10 +17,9 @@ final class ProductUpdateController extends Controller
     }
     public function execute(
         string $uuid,
-        ProductCreateRequest $request
+        ProductUpdateRequest $request
     ): JsonResponse {
         $dto = $request->validatedDto();
-
         try {
             $data = $this->productUpdateService->execute($uuid, $dto);
         } catch (\Throwable $e) {
@@ -29,7 +28,6 @@ final class ProductUpdateController extends Controller
                 'message' => $e->getMessage(),
             ], Response::HTTP_BAD_REQUEST);
         }
-
         return response()->json([
             'message' => 'Product updated successfully',
             'data' => $data,

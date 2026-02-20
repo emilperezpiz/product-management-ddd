@@ -14,6 +14,7 @@ interface IProductRepository
      * @return array<ProductModel>
      * */
     public function list(ProductListFilterDTO $filter): array;
+    public function search(ProductListFilterDTO $filter): array;
     public function create(Product $product): Product;
     public function getByUuid(string $uuid): ?Product;
     public function update(Product $product): Product;

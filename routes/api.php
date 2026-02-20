@@ -6,14 +6,9 @@ use App\Modules\Product\Http\Controller\ProductCreateController;
 use App\Modules\Product\Http\Controller\ProductDetailController;
 use App\Modules\Product\Http\Controller\ProductListController;
 use App\Modules\Product\Http\Controller\ProductRemoveController;
+use App\Modules\Product\Http\Controller\ProductSearchController;
 use App\Modules\Product\Http\Controller\ProductUpdateController;
-use Core\Infraestructure\Http\Controller\AuthController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Laravel\Passport\Http\Controllers\AccessTokenController;
-use Laravel\Passport\Http\Controllers\AuthorizedAccessTokenController;
-use Laravel\Passport\Http\Controllers\PersonalAccessTokenController;
-use Nette\Utils\Json;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -33,15 +28,17 @@ Route::get('/', function (): JsonResponse {
         'error' => 'É proibido o acesso direto ao endpoint raiz.',
     ], Response::HTTP_FORBIDDEN);
 });
-
 Route::get('/ping', function (): array {
-    return ['message' => 'Pong desde la API!'];
-});
+    \Illuminate\Support\Facades\Redis::setex('ping', 60, 'Pong desde la API!');
+    return ['message' => \Illuminate\Support\Facades\Redis::get('ping')];
 
-Route::prefix('product')->group(function () {
+});
+Route::prefix('products')->group(function () {
     Route::get('/', [ProductListController::class, 'execute'])->name('product.list');
     Route::post('/', [ProductCreateController::class, 'execute'])->name('product.create');
     Route::get('/{uuid}', [ProductDetailController::class, 'execute'])->name('product.details');
     Route::put('/{uuid}', [ProductUpdateController::class, 'execute'])->name('product.update');
     Route::delete('/{uuid}', [ProductRemoveController::class, 'execute'])->name('product.remove');
 });
+Route::get('search/products', [ProductSearchController::class, 'execute'])->name('product.search');
+

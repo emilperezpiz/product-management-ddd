@@ -17,7 +17,8 @@ class Product
         private ?string $description,
         private ProductPrice $price,
         private string $category,
-        private string $status
+        private string $status,
+        private ?string $imagePath = null,
     ) {
     }
 
@@ -27,7 +28,8 @@ class Product
         ?string $description,
         ProductPrice $price,
         string $category,
-        string $status = 'active'
+        string $status = 'active',
+        ?string $imagePath = null
     ): self {
         return new self(
             uuid: (string) Str::orderedUuid(),
@@ -36,7 +38,8 @@ class Product
             description: $description,
             price: $price,
             category: $category,
-            status: $status
+            status: $status,
+            imagePath: $imagePath
         );
     }
 
@@ -73,5 +76,10 @@ class Product
     public function status(): string
     {
         return $this->status;
+    }
+
+    public function imagePath(): ?string
+    {
+        return $this->imagePath;
     }
 }

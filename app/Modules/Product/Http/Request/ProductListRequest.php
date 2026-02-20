@@ -7,7 +7,7 @@ namespace App\Modules\Product\Http\Request;
 use App\Modules\Product\Application\DTO\ProductListFilterDTO;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProductListRequest extends FormRequest
+final class ProductListRequest extends FormRequest
 {
     public function authorize(): bool
     {

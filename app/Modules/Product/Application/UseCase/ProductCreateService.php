@@ -26,7 +26,8 @@ class ProductCreateService implements IProductCreateService
             description: $dto->description,
             price: new ProductPrice((float) $dto->price),
             category: $dto->category,
-            status: $dto->status
+            status: $dto->status,
+            imagePath: $dto->imagePath,
         ));
 
         return ProductDTO::from([
@@ -36,7 +37,8 @@ class ProductCreateService implements IProductCreateService
             'description' => $productModel->description(),
             'price' => $productModel->price()->value(),
             'category' => $productModel->category(),
-            'status' => $productModel->status()
+            'status' => $productModel->status(),
+            'imagePath' => $productModel->imagePath(),
         ]);
     }
 }

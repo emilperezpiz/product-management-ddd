@@ -6,8 +6,9 @@ namespace App\Modules\Product\Http\Request;
 
 use App\Modules\Product\Application\DTO\ProductCreateDTO;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-final class ProductCreateRequest extends FormRequest
+final class ProductUpdateRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -17,7 +18,12 @@ final class ProductCreateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'sku' => ['required', 'string', 'max:20', 'unique:products,sku'],
+            'sku' => [
+                'required',
+                'string',
+                'max:20',
+                Rule::unique('products', 'sku')->ignore($this->route('uuid'), 'uuid')
+            ],
             'name' => ['required', 'string', 'min:3', 'max:50'],
             'description' => ['nullable', 'string', 'max:150'],
             'category' => ['required', 'string', 'max:25'],

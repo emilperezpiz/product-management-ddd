@@ -15,4 +15,5 @@ class ProductDTO extends BaseDTO
     public float $price;
     public string $category;
     public string $status;
+    public ?string $imagePath;
 }

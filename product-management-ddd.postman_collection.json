@@ -11,6 +11,48 @@
       "name": "Product",
       "item": [
         {
+          "name": "search",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/search/products?page=1&limit=5&sort=name&orderBy=asc",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "search",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "sort",
+                  "value": "name"
+                },
+                {
+                  "key": "orderBy",
+                  "value": "asc"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "list",
           "request": {
             "method": "GET",
@@ -22,12 +64,12 @@
               }
             ],
             "url": {
-              "raw": "{{host}}/product?page=1&limit=2",
+              "raw": "{{host}}/products?page=1&limit=5&sort=name&orderBy=asc",
               "host": [
                 "{{host}}"
               ],
               "path": [
-                "product"
+                "products"
               ],
               "query": [
                 {
@@ -36,7 +78,15 @@
                 },
                 {
                   "key": "limit",
-                  "value": "2"
+                  "value": "5"
+                },
+                {
+                  "key": "sort",
+                  "value": "name"
+                },
+                {
+                  "key": "orderBy",
+                  "value": "asc"
                 }
               ]
             }
@@ -64,12 +114,12 @@
               }
             },
             "url": {
-              "raw": "{{host}}/product",
+              "raw": "{{host}}/products",
               "host": [
                 "{{host}}"
               ],
               "path": [
-                "product"
+                "products"
               ]
             }
           },
@@ -87,13 +137,46 @@
               }
             ],
             "url": {
-              "raw": "{{host}}/product/a11b6ebe-f1ac-4d49-949e-dbaa0d5164d7",
+              "raw": "{{host}}/products/a11f72c0-291a-4534-b306-4fc89c491416",
               "host": [
                 "{{host}}"
               ],
               "path": [
-                "product",
-                "a11b6ebe-f1ac-4d49-949e-dbaa0d5164d7"
+                "products",
+                "a11f72c0-291a-4534-b306-4fc89c491416"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"uuid\": \"a11f72c0-291a-4534-b306-4fc89c491416\",\n    \"sku\": \"123--GALAXY-S24\",\n    \"name\": \"Smartphone Galaxy S24\",\n    \"description\": \"Latest flagship from Samsung with AI features.\",\n    \"price\": 5999,\n    \"category\": \"Electronics\",\n    \"status\": \"active\",\n    \"imagePath\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{host}}/products/a11f72c0-291a-4534-b306-4fc89c491416",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "products",
+                "a11f72c0-291a-4534-b306-4fc89c491416"
               ]
             }
           },
@@ -111,12 +194,12 @@
               }
             ],
             "url": {
-              "raw": "{{host}}/product/a11b4ea4-b66e-4126-8ae1-1a8954fb795b",
+              "raw": "{{host}}/products/a11b4ea4-b66e-4126-8ae1-1a8954fb795b",
               "host": [
                 "{{host}}"
               ],
               "path": [
-                "product",
+                "products",
                 "a11b4ea4-b66e-4126-8ae1-1a8954fb795b"
               ]
             }

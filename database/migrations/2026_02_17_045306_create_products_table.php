@@ -12,7 +12,7 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('products', function (Blueprint $table) {
+        Schema::create('products', function (Blueprint $table): void {
             $table->uuid('uuid')->primary()->unique();
             $table->string('sku')->unique();
             $table->string('name', 50);
@@ -20,6 +20,7 @@ return new class extends Migration {
             $table->decimal('price', 12, 2);
             $table->string('category', 25);
             $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->string('imagePath')->nullable()->default(null);
             $table->timestamps();
             $table->softDeletes();
         });

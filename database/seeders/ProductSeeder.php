@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Elastic\Elasticsearch\ClientBuilder;
 
 class ProductSeeder extends Seeder
 {
     public function run(): void
     {
+        $client = ClientBuilder::create()
+            ->setHosts(['http://elasticsearch:9200'])
+            ->build();
         $products = [
             [
                 'uuid' => (string) Str::orderedUuid(),
@@ -298,6 +301,25 @@ class ProductSeeder extends Seeder
 
             if (!$existProduct) {
                 DB::table('products')->insert($product);
+
+                try {
+                    $client->index([
+                        'index' => 'products',
+                        'id' => $product['uuid'],
+                        'body' => [
+                            'uuid' => $product['uuid'],
+                            'sku' => $product['sku'],
+                            'name' => $product['name'],
+                            'category' => $product['category'],
+                            'description' => $product['description'],
+                            'price' => (float) $product['price'],
+                            'status' => $product['status'],
+                            'imagePath' => $product['imagePath'] ?? null,
+                        ]
+                    ]);
+                } catch (\Throwable $e) {
+                    $this->command->error("Error indexando SKU {$product['sku']}: " . $e->getMessage());
+                }
             }
         }
     }

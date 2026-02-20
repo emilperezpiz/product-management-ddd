@@ -12,13 +12,21 @@ use App\Modules\Product\Domain\ValueObject\ProductPrice;
 use App\Modules\Product\Infraestructure\Model\Product as ProductModel;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
+use Elastic\Elasticsearch\Client;
+use Elastic\Elasticsearch\ClientBuilder;
 
-class ProductRepository implements IProductRepository
+final class ProductRepository implements IProductRepository
 {
+    private const ITEM_PER_PAGE = 10;
+    private const COLUMNS = ['sku', 'name', 'description'];
     private ProductModel $model;
+    private Client $elasticsearch;
     public function __construct(
     ) {
         $this->model = new ProductModel();
+        $this->elasticsearch = ClientBuilder::create()
+            ->setHosts(['http://elasticsearch:9200'])
+            ->build();
     }
     private function qb(): QueryBuilder
     {
@@ -34,8 +42,80 @@ class ProductRepository implements IProductRepository
             description: $row->description,
             price: new ProductPrice((float) $row->price),
             category: $row->category,
-            status: $row->status
+            status: $row->status,
+            imagePath: $row->imagePath ?? null
         );
+    }
+
+    public function search(ProductListFilterDTO $filter): array
+    {
+        $limit = $filter->limit ?? self::ITEM_PER_PAGE;
+        $from = ($filter->page - 1) * $limit;
+        $sortField = $filter->sort;
+        $order = in_array($filter->orderBy, ['asc', 'desc']) ? $filter->orderBy : 'desc';
+        !in_array($sortField, self::COLUMNS) ?: $sortField = $sortField . '.keyword';
+        $params = [
+            'index' => 'products',
+            'body' => [
+                'from' => $from,
+                'size' => $limit,
+                'query' => [
+                    'bool' => [
+                        'must' => [],
+                        'filter' => []
+                    ]
+                ]
+            ]
+        ];
+        !in_array($sortField, ['created_at', 'price']) ?: $params['body']['sort'] = [
+            [$sortField => ['order' => $order]]
+        ];
+        if ($filter->search) {
+            $params['body']['query']['bool']['must'][] = [
+                'multi_match' => [
+                    'query' => $filter->search,
+                    'fields' => ['name^3', 'description']
+                ]
+            ];
+        } else {
+            $params['body']['query']['bool']['must'][] = ['match_all' => (object) []];
+        }
+        !$filter->category ?: $params['body']['query']['bool']['filter'][] = [
+            'term' => ['category.keyword' => $filter->category]
+        ];
+        if ($filter->status && in_array($filter->status, ['active', 'inactive'])) {
+            $params['body']['query']['bool']['filter'][] = [
+                'term' => ['status' => $filter->status] // status ya suele ser keyword
+            ];
+        }
+        if (
+            $filter->minPrice ||
+            $filter->maxPrice
+        ) {
+            $range = [];
+            if ($filter->minPrice)
+                $range['gte'] = (float) $filter->minPrice;
+            if ($filter->maxPrice)
+                $range['lte'] = (float) $filter->maxPrice;
+
+            $params['body']['query']['bool']['filter'][] = [
+                'range' => ['price' => $range]
+            ];
+        }
+
+        try {
+            $response = $this->elasticsearch->search($params);
+        } catch (\Throwable $e) {
+            return [];
+        }
+
+        return array_map(function ($hit) {
+            $data = (object) $hit['_source'];
+            if (!isset($data->uuid)) {
+                $data->uuid = $hit['_id'];
+            }
+            return $this->mapToDomain($data);
+        }, $response['hits']['hits']);
     }
 
     /**
@@ -43,49 +123,99 @@ class ProductRepository implements IProductRepository
      * */
     public function list(ProductListFilterDTO $filter): array
     {
+        $limit = $filter->limit ?? self::ITEM_PER_PAGE;
+        $offset = ($filter->page - 1) * $filter->limit;
         $qb = $this->qb()
             ->when($filter->sku, function (QueryBuilder $qb) use ($filter) {
                 $qb->where("sku", $filter->sku);
             })
-            ->when($filter->name, function (QueryBuilder $qb) use ($filter) {
-                $qb->where("name", "like", "%{$filter->name}%");
+            ->when($filter->search, function (QueryBuilder $qb) use ($filter) {
+                $qb->where("name", "like", "%{$filter->search}%");
+            })
+            ->when($filter->category, function (QueryBuilder $qb) use ($filter) {
+                $qb->where("category", $filter->category);
             })
             ->where('deleted_at', null)
-            ->orderBy('created_at', 'desc')
-            ->offset(($filter->page - 1) * $filter->limit)
-            ->limit($filter->limit);
+            ->orderBy(
+                in_array($filter->sort, self::COLUMNS) ? $filter->sort : 'created_at',
+                in_array($filter->orderBy, ['asc', 'desc']) ? $filter->orderBy : 'desc',
+            )
+            ->offset($offset)
+            ->limit($limit);
 
-        return $qb->get()->map(function ($row) {
+        return $qb->get()->map(function ($row): Product {
             return $this->mapToDomain($row);
         })->toArray();
     }
     public function create(Product $product): Product
     {
-        $this->model::create([
-            'uuid' => $product->uuid(),
-            'sku' => $product->sku(),
-            'name' => $product->name()->value(),
-            'description' => $product->description(),
-            'price' => $product->price()->value(),
-            'category' => $product->category(),
-            'status' => $product->status()
-        ]);
-
-        return $product;
-    }
-
-    public function update(Product $product): Product
-    {
-        $this->model::where('uuid', $product->uuid())
-            ->first()
-            ->update([
+        DB::transaction(function () use ($product): void {
+            $this->model::create([
+                'uuid' => $product->uuid(),
                 'sku' => $product->sku(),
                 'name' => $product->name()->value(),
                 'description' => $product->description(),
                 'price' => $product->price()->value(),
                 'category' => $product->category(),
-                'status' => $product->status()
+                'status' => $product->status(),
+                'imagePath' => $product->imagePath(),
             ]);
+
+            try {
+                $this->elasticsearch->index([
+                    'index' => 'products',
+                    'id' => $product->uuid(),
+                    'body' => [
+                        'uuid' => $product->uuid(),
+                        'sku' => $product->sku(),
+                        'name' => $product->name()->value(),
+                        'description' => $product->description(),
+                        'price' => $product->price()->value(),
+                        'category' => $product->category(),
+                        'status' => $product->status(),
+                        'imagePath' => $product->imagePath(),
+                    ]
+                ]);
+            } catch (\Throwable $e) {
+                throw $e;
+            }
+        });
+        return $product;
+    }
+
+    public function update(Product $product): Product
+    {
+        DB::transaction(function () use ($product): void {
+            $this->model::where('uuid', $product->uuid())
+                ->first()
+                ->update([
+                    'sku' => $product->sku(),
+                    'name' => $product->name()->value(),
+                    'description' => $product->description(),
+                    'price' => $product->price()->value(),
+                    'category' => $product->category(),
+                    'status' => $product->status(),
+                    'imagePath' => $product->imagePath(),
+                ]);
+            try {
+                $this->elasticsearch->index([
+                    'index' => 'products',
+                    'id' => $product->uuid(),
+                    'body' => [
+                        'uuid' => $product->uuid(),
+                        'sku' => $product->sku(),
+                        'name' => $product->name()->value(),
+                        'description' => $product->description(),
+                        'price' => (float) $product->price()->value(),
+                        'category' => $product->category(),
+                        'status' => $product->status(),
+                        'imagePath' => $product->imagePath(),
+                    ]
+                ]);
+            } catch (\Throwable $e) {
+                throw $e;
+            }
+        });
 
         return $product;
     }
@@ -94,18 +224,28 @@ class ProductRepository implements IProductRepository
     {
         $qb = $this->qb()->where("uuid", $uuid);
         $row = $qb->first();
-
         if (!$row) {
             return null;
         }
-
         return $this->mapToDomain($row);
     }
 
     public function remove(Product $product): void
     {
-        $this->qb()
-            ->where('uuid', $product->uuid())
-            ->update(['deleted_at' => now()]);
+        DB::transaction(function () use ($product): void {
+            $this->qb()
+                ->where('uuid', $product->uuid())
+                ->update(['deleted_at' => now()]);
+
+            try {
+                $this->elasticsearch->delete([
+                    'index' => 'products',
+                    'id' => $product->uuid()
+                ]);
+            } catch (\Throwable $e) {
+                throw $e;
+            }
+        });
+
     }
 }

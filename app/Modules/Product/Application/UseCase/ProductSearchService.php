@@ -6,12 +6,12 @@ namespace App\Modules\Product\Application\UseCase;
 
 use App\Modules\Product\Application\DTO\ProductDTO;
 use App\Modules\Product\Application\DTO\ProductListFilterDTO;
-use App\Modules\Product\Application\UseCase\Interface\IProductListService;
+use App\Modules\Product\Application\UseCase\Interface\IProductSearchService;
 use App\Modules\Product\Domain\Entity\Product;
 use App\Modules\Product\Domain\IRepository\IProductRepository;
 use Illuminate\Support\Facades\Redis;
 
-class ProductListService implements IProductListService
+class ProductSearchService implements IProductSearchService
 {
     private const LIMIT_PAGES_TO_CACHE = 50;
     private const REDIS_TTL_TWO_MINUTE = 120;
@@ -46,7 +46,7 @@ class ProductListService implements IProductListService
                 }, json_decode($cachedData, true));
             }
         }
-        $data = $this->productRepository->list($filter);
+        $data = $this->productRepository->search($filter);
         $dataToRedis = [];
         $result = array_map(function (Product $product) use (&$dataToRedis): ProductDTO {
             $item = ProductDTO::from([
